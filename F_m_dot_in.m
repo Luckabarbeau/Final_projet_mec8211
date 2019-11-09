@@ -6,6 +6,6 @@ function m = F_m_dot_in(t)
 %     else
 %      Q=12000;
 %     end
-m=0.6*(sin(t)+1)+0.3;
+m=0.1*(sin(t)+1)+0.5;
 end
 

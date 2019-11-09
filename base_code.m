@@ -13,6 +13,8 @@ m_dot_out_s=m_dot;
 V_specific=0.001043;
 T_out=20;
 temp_max=200
+alpha=	1.43e-7; %water conduction
+
 %Volume pour eau Composante m^3
 dv=0.00001;
 Volume_m=0.0007;
@@ -42,6 +44,9 @@ V2=V;
 V3=V';
 X_2=X;
 
+C_M=conduction_matrix(V,dv)*alpha;
+I=eye(length(V));
+epsilone=0
 
 figure()
 for t=0:dt:temp_max
@@ -51,7 +56,7 @@ for t=0:dt:temp_max
 %     m_vap2=m_vap;
     %resolution swirl
     
-    cell_in_swirl=find(V>=(Volume_tube_1+Volume_m)& V<=(Volume_tube_1+Volume_m+Volume_swirl));
+    cell_in_swirl=find(V>=(Volume_tube_1+Volume_m)& V<=(Volume_tube_1+Volume_m+Volume_swirl+epsilone));
     if isempty(cell_in_swirl)
         error('Time_step_to big')
     else
@@ -75,11 +80,6 @@ for t=0:dt:temp_max
             T_2(i)=T(i);
             X_2(i)=X(i);
             V2(i)=V(i)+V_specific*m_dot_in*dt;
-%         elseif V(i)>=(Volume_tube_1+Volume_m)& V(i)<(Volume_tube_1+Volume_m+Volume_swirl)
-%             %swirl
-%             [P2,T_2(i),m_vap2,m_dot_out]=swirlpot(m_dot_in,X(i),P,T(i),Q_out,m_vap,dt);
-%             X_2(i)=0;
-%             V2(i)=V(i)+V_specific*m_dot_in*dt;
         elseif V(i)>(Volume_tube_1+Volume_m+Volume_swirl) & V(i)<(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2)
             %Tube 2
             T_2(i)=T(i);
@@ -128,6 +128,10 @@ for t=0:dt:temp_max
     plot(V(1),T(1));
     z2 = zeros(size(V(:)));
     color_line3(V(:)',z2,T(:),T(:)','LineWidth',4);
+    %Conduction in water
+    
+    T=(I/dt-C_M)\(T/dt);
+    
     if mod(t,2)==0
     hold on
     plot([sections(1) sections(1)],[-1 1])

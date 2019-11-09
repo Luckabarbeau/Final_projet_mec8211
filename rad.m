@@ -5,7 +5,7 @@ R=8.31446261815324; %J?K?1?mol?1
 mol_mass=0.01801528; %kg/mol;
 energie_intern_liquide=4.1902;
 R_s=R/mol_mass;
-H=50;
+H=100;
 Q_out=(T-T_out)*H;
 
 energie_cool_liquid=Q_out/(Volume_rad/(V_specific*m_dot_in*dt));
