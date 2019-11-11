@@ -1,17 +1,24 @@
-%% modélisation du swirl pot
-clear all; close all
+%% modï¿½lisation du swirl pot
+% clear all; close all
+load('baseline2020results_damping.mat')
+RPM=data{89}.Values
+power=data{32}.Values
+car_speed=data{91}.Values
 
 m_vap=0;
 m_dot=0.6;
 P=101300 ;
-T_in=20;
+T_in=80;
 Q_out=10;
 i=1;
 m_dot_out_s=m_dot;
 V_specific=0.001043;
 T_out=20;
 temp_max=200
-alpha=	1.43e-7; %water conduction
+alpha= 1.43e-7; %water conduction
+
+
+
 
 %Volume pour eau Composante m^3
 dv=0.00001;
@@ -41,20 +48,22 @@ T3=[T]
 V2=V;
 V3=V';
 X_2=X;
-
+V_out=ones(length(V),1)*V_specific
+V_out2=V_out;
 C_M=conduction_matrix(V,dv)*alpha;
 I=eye(length(V));
-epsilone=0
+
 
 figure()
 for t=0:dt:temp_max
-    Q_in=F_Q_in(t);
-    m_dot_in=F_m_dot_in(t);
+    Q_in=interp1(power.Time,power.Data,mod(t,max(RPM.Time)),'makima')*2/3;
+    m_dot_in=1.140e-04*interp1(RPM.Time,RPM.Data,mod(t,max(RPM.Time)),'makima') - 5.895e-02;
+    vitesse=interp1(car_speed.Time,car_speed.Data,mod(t,max(RPM.Time)),'makima');
 %     P2=P;
 %     m_vap2=m_vap;
     %resolution swirl
     
-    cell_in_swirl=find(V>=(Volume_tube_1+Volume_m)& V<=(Volume_tube_1+Volume_m+Volume_swirl+epsilone));
+    cell_in_swirl=find(V>=(Volume_tube_1+Volume_m)& V<=(Volume_tube_1+Volume_m+Volume_swirl));
     if isempty(cell_in_swirl)
         error('Time_step_to big')
     else
@@ -62,9 +71,11 @@ for t=0:dt:temp_max
     X_2(cell_in_swirl)=0;
     V2(cell_in_swirl)=V(cell_in_swirl)+V_specific*m_dot_in*dt;
     end
+    
     for i=1:length(T)
         if V(i)<Volume_m
             %Moteur
+            
             [T_2(i),X_2(i)]=moteur(m_dot_in,P,T(i),Q_in/(Volume_m/(V_specific*m_dot*dt)));
             V2(i)=V(i)+V_specific*m_dot_in*dt;
             if V2(i)<Volume_m
@@ -86,18 +97,18 @@ for t=0:dt:temp_max
             Vmax=(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2);
             if V2(i)<(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2)
             else 
-               T_2(i)=rad(m_dot,P,T(i),T_out,V_specific,Volume_rad,dt*(V2(i)-Vmax)/(V2(i)-V(i)));
+               T_2(i)=rad(m_dot,P,T(i),T_out,V_specific,Volume_rad,dt*(V2(i)-Vmax)/(V2(i)-V(i)),vitesse);
             end
             
         elseif V(i)>=(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2) & V(i)<(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2+Volume_rad)
             %rad
-            T_2(i)=rad(m_dot_out,P,T(i),T_out,V_specific,Volume_rad,dt);
+            T_2(i)=rad(m_dot_out,P,T(i),T_out,V_specific,Volume_rad,dt,vitesse);
             X_2(i)=X(i);
             V2(i)=V(i)+V_specific*m_dot_out*dt;
             Vmax=(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2+Volume_rad);
             if V2(i)<(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2+Volume_rad)
             else
-               T_2(i)=rad(m_dot_out,P,T(i),T_out,V_specific,Volume_rad,dt*(1-(V2(i)-Vmax)/(V2(i)-V(i))));
+               T_2(i)=rad(m_dot_out,P,T(i),T_out,V_specific,Volume_rad,dt*(1-(V2(i)-Vmax)/(V2(i)-V(i))),vitesse);
             end
             
         elseif V(i)>=(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2+Volume_rad)
@@ -116,6 +127,7 @@ for t=0:dt:temp_max
     P3(length(P3)+1,1)=P;
     m_vap=m_vap2;
     P=P2;
+    V_out=V_out2;
     time=[time t];
     V(V>Volume_total)=V(V>Volume_total)-Volume_total;
     disp('time solved')
