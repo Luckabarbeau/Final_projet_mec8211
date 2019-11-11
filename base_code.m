@@ -1,8 +1,6 @@
 %% modélisation du swirl pot
 clear all; close all
 
-
-
 m_vap=0;
 m_dot=0.6;
 P=101300 ;
