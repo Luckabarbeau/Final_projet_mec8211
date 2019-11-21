@@ -15,7 +15,7 @@ i=1;
 V_specific=0.001043;
 T_out=20;
 temp_max=50
-alpha= 0.001;%1.43e-7; %water conduction
+alpha=0;%1.43e-7; %water conduction
 
 
 
@@ -34,7 +34,7 @@ sections=[Volume_m Volume_m+Volume_tube_1 Volume_m+Volume_tube_1+Volume_swirl Vo
 
 
 %Discretisation 
-dt=0.01;
+dt=0.02;
 
 V=linspace(0,Volume_total,Volume_total/dv+1)
 V(end)=[];
@@ -58,12 +58,14 @@ ratio_heat_power=2/3;
 
 figure(1)
 figure(2)
+dt_select=[0.04 0.03125 0.025 0.02 0.015625 0.01 ]
 
-for convergence=1:3
+for convergence=1:6
     if i~=1
-        dv=dv/2;
+        dt=dt/2;
+        
     end
-    
+    dt=dt_select(convergence);
     V=linspace(0,Volume_total,Volume_total/dv+1)
     V(end)=[];
     T=ones(length(V),1)*T_in;
@@ -81,10 +83,14 @@ for convergence=1:3
     C_M=conduction_matrix(V,dv)*alpha;
     I=eye(length(V));
     
-    for t=0:dt:temp_max
+    for t=0:dt:temp_max-dt
         Q_in=interp1(power.Time,power.Data,mod(t,max(RPM.Time)),'makima')*ratio_heat_power;
         m_dot_in=1.140e-04*interp1(RPM.Time,RPM.Data,mod(t,max(RPM.Time)),'makima') - 5.895e-02;
         vitesse=interp1(car_speed.Time,car_speed.Data,mod(t,max(RPM.Time)),'makima');
+%         vitesse=15;
+%         m_dot_in=0.8;
+%         Q_in=10000;
+        
         %     P2=P;
         %     m_vap2=m_vap;
         %resolution swirl
@@ -168,12 +174,10 @@ for convergence=1:3
         m_vap=m_vap2;
         P=P2;
         V_out=V_out2;
-        time=[time t];
+        time=[time t+dt];
         V(V>Volume_total)=V(V>Volume_total)-Volume_total;
         disp('time solved')
-        disp(t)
-        %     disp('volume displacement')
-        %     disp(V_specific*m_dot_in*dt)
+        disp(t+dt)
         hold off
         
         %Conduction in water
@@ -188,48 +192,46 @@ for convergence=1:3
             disp('degaz_not_respected')
             error('degazage non respecte')
         end
-        %     if V(17)-V(16)~=dv
-        %         disp('here');
-        %     end
         
-        
-        %     if mod(t,2)==0
-        %         z3 = ones(size(V(:)));
-        %         figure(1)
-        %     color_line3(V(:)',z3,X(:)',X(:)','LineWidth',4);
-        %
-        %     colorbar;
-        %     figure(2)
-        %     plot(V(1),T(1));
-        %     hold on
-        %     z2 = zeros(size(V(:)));
-        %
-        %     color_line3(V(:)',z2,T(:)',T(:)','LineWidth',4);
-        %
-        %     plot([sections(1) sections(1)],[-1 1])
-        %     plot([sections(2) sections(2)],[-1 1])
-        %     plot([sections(3) sections(3)],[-1 1])
-        %     plot([sections(4) sections(4)],[-1 1])
-        %     plot([sections(5) sections(5)],[-1 1])
-        %     plot([sections(6) sections(6)],[-1 1])
-        %     xlim([0 Volume_total]);
-        %     colorbar;
-        %     ylim([-1 1]);
-        %     pause(0.01);
-        %     end
+
+            if mod(t,2)==0
+%                 z3 = ones(size(V(:)));
+%                 figure(1)
+%             color_line3(V(:)',z3,X(:)',X(:)','LineWidth',4);
+%         
+%             colorbar;
+%             figure(2)
+%             plot(V(1),T(1));
+%             hold on
+%             z2 = zeros(size(V(:)));
+%         
+%             color_line3(V(:)',z2,T(:)',T(:)','LineWidth',4);
+%         
+%             plot([sections(1) sections(1)],[-1 1])
+%             plot([sections(2) sections(2)],[-1 1])
+%             plot([sections(3) sections(3)],[-1 1])
+%             plot([sections(4) sections(4)],[-1 1])
+%             plot([sections(5) sections(5)],[-1 1])
+%             plot([sections(6) sections(6)],[-1 1])
+%             xlim([0 Volume_total]);
+%             colorbar;
+%             ylim([-1 1]);
+%             pause(0.01);
+%               plot(V(:)',T(:)','.')
+%               pause(0.001)
+            end
     end
     
     T_final(convergence)=(mean(T));
     T_error(convergence)=abs(mean(T)-71.375630660228140);
     delta_t(convergence)=dt;
     delta_v(convergence)=dv;
+    mean_T{convergence}=mean(T3)'
     figure(3)
     hold on
     plot(time,mean(T3))
     pause(0.1)
 end
 
-delta_v(convergence)=dv
-% T_exact_approx=71.375630660228140;
-approximate_order=polyfit(log(delta_v),log(T_error),1)
 ordre_approx=log((T_final(3)-T_final(2))/(T_final(2)-T_final(1)))/log(0.5);
+

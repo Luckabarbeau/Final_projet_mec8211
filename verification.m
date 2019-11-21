@@ -66,6 +66,10 @@ while V<Volume_rad+Volume_rad/10
     if V_2<Volume_rad
     else
         T_2=(1-(V_2-Volume_rad)/(V_2-V))*(T_2-T)+T;
+        dt_2=(1-(V_2-Volume_rad)/(V_2-V))*dt
+        if V<Volume_rad
+        T_2=rad(m_dot,P,T,T_out,V_specific,Volume_rad,dt_2,vitesse)
+        end
     end
     T=T_2;
     V=V_2;
@@ -75,7 +79,8 @@ T_out_exact=T_out+C1*exp(-(7.0757*vitesse  - 1.2056)/m_dot/energie_intern_liquid
 delta_t(i)=dt;
 E_rad(i)=T-T_out_exact;
 end
-
+plot(log(delta_t),log(abs(E_rad)))
+xlabel('ln(dt)')
 numerical_order_rad=polyfit(log(delta_t),log(abs(E_rad)),1);
 
 %verification du degazeur 

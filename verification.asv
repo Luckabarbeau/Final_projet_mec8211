@@ -18,7 +18,7 @@ Volume_m=0.0007;
 Volume_rad=0.0009;
 T_in_rad=50;
 
-dt=0.001
+dt=0.1
 
 %Verification moteur
 % on suit une seul particule d'eau
@@ -53,10 +53,10 @@ E_moteur=T-T_out_exact;
 
 for i=1:5
     if i~=1
-        dt=dt/2
+        dt=dt/2;
     end
-    T=T_in_rad
-    V=0
+    T=T_in_rad;
+    V=0;
 while V<Volume_rad+Volume_rad/10
     if V<Volume_rad
         [T_2]=rad(m_dot,P,T,T_out,V_specific,Volume_rad,dt,vitesse);
@@ -65,15 +65,24 @@ while V<Volume_rad+Volume_rad/10
     
     if V_2<Volume_rad
     else
-        T_2=(1-(V_2-Volume_rad)/(V_2-V))*(T_2-T)+T;
+        T_2=[T_2]=rad(m_dot,P,T,T_out,V_specific,Volume_rad,dt*,vitesse)(1-(V_2-Volume_rad)/(V_2-V))*(T_2-T)+T;
     end
     T=T_2;
     V=V_2;
 end
-C1=T_in_rad-T_out
+C1=T_in_rad-T_out;
 T_out_exact=T_out+C1*exp(-(7.0757*vitesse  - 1.2056)/m_dot/energie_intern_liquide/1000*Volume_rad/Volume_rad);
-delta_t(i)=dt
-E_rad(i)=T-T_out_exact
+delta_t(i)=dt;
+E_rad(i)=T-T_out_exact;
 end
+plot(log(delta_t),log(abs(E_rad)))
+xlabel('ln(dt)')
+numerical_order_rad=polyfit(log(delta_t),log(abs(E_rad)),1);
 
-numerical_order_rad=polyfit(log(delta_t,
+%verification du degazeur 
+
+
+
+
+
+

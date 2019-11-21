@@ -12,12 +12,11 @@ R_s=R/mol_mass;
 H=7.0757*vitesse  - 1.2056; %single pass
 % H=50;
 Q_out=(T-T_out)*H;
-% H=0;
 
 energie_cool_liquid=Q_out/(Volume_rad/(V_specific*m_dot_in*dt));
 % energie_cool_liquide_by_k=1.485+(P/1000)*0.0003584;%kj/kg/k
 delta_t=energie_cool_liquid/(energie_intern_liquide*1000)/m_dot_in;
-delta_t=T-(T_out+(T-T_out)*exp(-H/m_dot_in/energie_intern_liquide/1000*(V_specific*m_dot_in*dt)/Volume_rad));
+delta_t=(T-T_out)*exp(-H/m_dot_in/energie_intern_liquide/1000*dt*(V_specific*m_dot_in*dt)/);
 T=T-delta_t;
 if delta_t<0
     disp(delta_t);
