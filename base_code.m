@@ -65,12 +65,14 @@ dt_select=[0.04 0.03125 0.025 0.02 0.015625 0.01 ];
 % hyper cube sampling 100
 hyper_cube=lhsdesign(100,3)
 
-H_speed_lhs=hyper_cube(:,2)*0.927225+7.845025;
-ratio_heat_power_lhs=hyper_cube(:,1)*0.2+0.8;
-pompe_flow_lhs=hyper_cube(:,3)*0.1057+1.057;
+H_speed_lhs=hyper_cube(:,2)*0.927225*2+7.845025-0.927225;
+ratio_heat_power_lhs=hyper_cube(:,1)*0.2*2+0.8-0.2;
+pompe_flow_lhs=hyper_cube(:,3)*0.1057*2+1.057-0.1057;
 
 ratio_heat_power=1
 for convergence=1:length(ratio_heat_power_lhs)
+    m_vap=0;
+    P=101300;
     V=linspace(0,Volume_total,Volume_total/dv+1)
     V(end)=[];
     T=ones(length(V),1)*T_in;
@@ -247,6 +249,7 @@ for convergence=1:length(ratio_heat_power_lhs)
     delta_t(convergence)=dt;
     delta_v(convergence)=dv;
     mean_T{convergence}=mean(T3)'
+    dt_all{convergence}=0:dt:temps_max
     figure(3)
     hold on
     plot(time,mean(T3))

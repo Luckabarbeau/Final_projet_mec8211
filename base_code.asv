@@ -65,15 +65,12 @@ dt_select=[0.04 0.03125 0.025 0.02 0.015625 0.01 ];
 % hyper cube sampling 100
 hyper_cube=lhsdesign(100,3)
 
-H_speed_lhs=hyper_cube(:,2)*0.927225+7.845025
-ratio_heat_power_lhs=hyper_cube(:,1)*0.2+0.8
-flow_p
+H_speed_lhs=hyper_cube(:,2)*0.927225*2+7.845025-0.927225;
+ratio_heat_power_lhs=hyper_cube(:,1)*0.2*2+0.8-0.2;
+pompe_flow_lhs=hyper_cube(:,3)*0.1057*2+1.057-0.1057;
 
 ratio_heat_power=1
-for convergence=1:1
-    
-    
-    
+for convergence=1:length(ratio_heat_power_lhs)
     V=linspace(0,Volume_total,Volume_total/dv+1)
     V(end)=[];
     T=ones(length(V),1)*T_in;
@@ -91,14 +88,18 @@ for convergence=1:1
     C_M=conduction_matrix(V,dv)*alpha;
     I=eye(length(V));
     
-    m_dot_max=1.140e-04*max(RPM.Data)- 5.895e-02
+    m_dot_max=pompe_flow_lhs(convergence)*0.0001*max(RPM.Data)
     
     dt=dv*courant_desirer/(V_specific*m_dot_max);
     dt=temps_max/round(temps_max/dt);
+    
+    
+    
+    H_speed=H_speed_lhs(convergence);
     %nombre de courant constant=
     for t=0:dt:temps_max-dt
-        Q_in=interp1(power.Time,power.Data,mod(t,max(RPM.Time)),'makima')*ratio_heat_power;
-        m_dot_in=1.0570*interp1(RPM.Time,RPM.Data,mod(t,max(RPM.Time)),'makima');
+        Q_in=interp1(power.Time,power.Data,mod(t,max(RPM.Time)),'makima')*ratio_heat_power_lhs(convergence);
+        m_dot_in=pompe_flow_lhs(convergence)*interp1(RPM.Time,RPM.Data,mod(t,max(RPM.Time)),'makima')*0.0001;
         vitesse=interp1(car_speed.Time,car_speed.Data,mod(t,max(RPM.Time)),'makima');
 %         vitesse=20;
 %         m_dot_in=1;
@@ -211,8 +212,8 @@ for convergence=1:1
             error('degazage non respecte')
         end
         
-              plot(V(:)',T(:)','.')
-              pause(0.001)
+%               plot(V(:)',T(:)','.')
+%               pause(0.001)
             if mod(t,2)==0
 %                 z3 = ones(size(V(:)));
 %                 figure(1)
@@ -236,8 +237,8 @@ for convergence=1:1
 %             colorbar;
 %             ylim([-1 1]);
 %             pause(0.01);
-              plot(V(:)',T(:)','.')
-              pause(0.001)
+%               plot(V(:)',T(:)','.')
+%               pause(0.001)
             end
     end
     
@@ -246,6 +247,7 @@ for convergence=1:1
     delta_t(convergence)=dt;
     delta_v(convergence)=dv;
     mean_T{convergence}=mean(T3)'
+    dt_all{convergence}=0:dt:temps_max
     figure(3)
     hold on
     plot(time,mean(T3))
