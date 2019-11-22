@@ -5,6 +5,8 @@ RPM=data{89}.Values
 power=data{32}.Values
 car_speed=data{91}.Values
 
+
+
 m_vap=0;
 m_dot=0.6;
 P=101300 ;
@@ -14,17 +16,17 @@ i=1;
 % m_dot_out_s=m_dot;
 V_specific=0.001043;
 T_out=20;
-temp_max=50
+temps_max=200
 alpha=0;%1.43e-7; %water conduction
+H_speed=7.0178;
 
-
-
+courant_desirer=0.8;
 
 %Volume pour eau Composante m^3
-dv=0.00001;
+dv=0.00005;
 Volume_m=0.0007;
 Volume_tube_1=0.0001;
-Volume_swirl=0;
+Volume_swirl=0.0001;
 Volume_tube_2=0.0001;
 Volume_rad=0.0009;
 Volume_tube_3=0.0001;
@@ -54,18 +56,21 @@ C_M=conduction_matrix(V,dv)*alpha;
 I=eye(length(V));
 
 
-ratio_heat_power=2/3;
+
 
 figure(1)
 figure(2)
-dt_select=[0.04 0.03125 0.025 0.02 0.015625 0.01 ]
+dt_select=[0.04 0.03125 0.025 0.02 0.015625 0.01 ];
 
-for convergence=1:6
-    if i~=1
-        dt=dt/2;
-        
-    end
-    dt=dt_select(convergence);
+% hyper cube sampling 100
+hyper_cube=lhsdesign(100,3)
+
+H_speed_lhs=hyper_cube(:,2)*0.927225+7.845025;
+ratio_heat_power_lhs=hyper_cube(:,1)*0.2+0.8;
+pompe_flow_lhs=hyper_cube(:,3)*0.1057+1.057;
+
+ratio_heat_power=1
+for convergence=1:length(ratio_heat_power_lhs)
     V=linspace(0,Volume_total,Volume_total/dv+1)
     V(end)=[];
     T=ones(length(V),1)*T_in;
@@ -83,21 +88,32 @@ for convergence=1:6
     C_M=conduction_matrix(V,dv)*alpha;
     I=eye(length(V));
     
-    for t=0:dt:temp_max-dt
-        Q_in=interp1(power.Time,power.Data,mod(t,max(RPM.Time)),'makima')*ratio_heat_power;
-        m_dot_in=1.140e-04*interp1(RPM.Time,RPM.Data,mod(t,max(RPM.Time)),'makima') - 5.895e-02;
+    m_dot_max=pompe_flow_lhs(convergence)*0.0001*max(RPM.Data)
+    
+    dt=dv*courant_desirer/(V_specific*m_dot_max);
+    dt=temps_max/round(temps_max/dt);
+    
+    
+    
+    H_speed=H_speed_lhs(convergence);
+    %nombre de courant constant=
+    for t=0:dt:temps_max-dt
+        Q_in=interp1(power.Time,power.Data,mod(t,max(RPM.Time)),'makima')*ratio_heat_power_lhs(convergence);
+        m_dot_in=pompe_flow_lhs(convergence)*interp1(RPM.Time,RPM.Data,mod(t,max(RPM.Time)),'makima')*0.0001;
         vitesse=interp1(car_speed.Time,car_speed.Data,mod(t,max(RPM.Time)),'makima');
-%         vitesse=15;
-%         m_dot_in=0.8;
-%         Q_in=10000;
+%         vitesse=20;
+%         m_dot_in=1;
+%         Q_in=8000;
+%         
+
         
-        %     P2=P;
-        %     m_vap2=m_vap;
-        %resolution swirl
-        courant_number=V_specific*m_dot_in*dt/dv;
-        cell_in_swirl=find(V>=(Volume_tube_1+Volume_m)& V<(Volume_tube_1+Volume_m+Volume_swirl));
+        cell_in_swirl2=find(V>=(Volume_tube_1+Volume_m-dv/10)& V<(Volume_tube_1+Volume_m+Volume_swirl));
+        for i=1:length(cell_in_swirl2)
+            cell_in_swirl=cell_in_swirl2(i);
+            if i==1
+            
         if isempty(cell_in_swirl)
-            cell_in_swirl=find(V>=(Volume_tube_1+Volume_m-dv/10)& V<=(Volume_tube_1+Volume_m+Volume_swirl));
+%             cell_in_swirl=find(V>=(Volume_tube_1+Volume_m-dv/10)& V<=(Volume_tube_1+Volume_m+Volume_swirl));
             if isempty(cell_in_swirl)
                 error('Time_step_to big')
             else
@@ -111,7 +127,10 @@ for convergence=1:6
             X_2(cell_in_swirl)=0;
             V2(cell_in_swirl)=V(cell_in_swirl)+V_specific*m_dot_in*dt;
         end
-        
+            else
+            V2(cell_in_swirl)=V(cell_in_swirl)+V_specific*m_dot_in*dt;
+            end
+        end
         m_dot_out=m_dot_in; % perte de masse negligable
         for i=1:length(T)
             if V(i)<Volume_m
@@ -138,18 +157,18 @@ for convergence=1:6
                 Vmax=(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2);
                 if V2(i)<(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2)
                 else
-                    T_2(i)=rad(m_dot_in,P,T(i),T_out,V_specific,Volume_rad,dt*(V2(i)-Vmax)/(V2(i)-V(i)),vitesse);
+                    T_2(i)=rad(m_dot_in,P,T(i),T_out,V_specific,Volume_rad,dt*(V2(i)-Vmax)/(V2(i)-V(i)),vitesse,H_speed);
                 end
                 
             elseif V(i)>=(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2) & V(i)<(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2+Volume_rad)
                 %rad
-                T_2(i)=rad(m_dot_in,P,T(i),T_out,V_specific,Volume_rad,dt,vitesse);
+                T_2(i)=rad(m_dot_in,P,T(i),T_out,V_specific,Volume_rad,dt,vitesse,H_speed);
                 X_2(i)=X(i);
                 V2(i)=V(i)+V_specific*m_dot_in*dt;
                 Vmax=(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2+Volume_rad);
                 if V2(i)<(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2+Volume_rad)
                 else
-                    T_2(i)=rad(m_dot_in,P,T(i),T_out,V_specific,Volume_rad,dt*(1-(V2(i)-Vmax)/(V2(i)-V(i))),vitesse);
+                    T_2(i)=rad(m_dot_in,P,T(i),T_out,V_specific,Volume_rad,dt*(1-(V2(i)-Vmax)/(V2(i)-V(i))),vitesse,H_speed);
                 end
                 
             elseif V(i)>=(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2+Volume_rad)
@@ -193,7 +212,8 @@ for convergence=1:6
             error('degazage non respecte')
         end
         
-
+%               plot(V(:)',T(:)','.')
+%               pause(0.001)
             if mod(t,2)==0
 %                 z3 = ones(size(V(:)));
 %                 figure(1)
@@ -235,3 +255,4 @@ end
 
 ordre_approx=log((T_final(3)-T_final(2))/(T_final(2)-T_final(1)))/log(0.5);
 
+ordre_approx=log((T_final(4)-T_final(3))/(T_final(3)-T_final(2)))/log(0.5);

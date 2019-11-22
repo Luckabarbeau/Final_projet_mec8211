@@ -13,7 +13,7 @@ temp_max=200
 alpha=	1.43e-7; %water conduction
 energie_intern_liquide=4.1902;
 vitesse=15
-
+H_speed=7.0178;
 Volume_m=0.0007;
 Volume_rad=0.0009;
 T_in_rad=50;
@@ -59,7 +59,7 @@ for i=1:5
     V=0;
 while V<Volume_rad+Volume_rad/10
     if V<Volume_rad
-        [T_2]=rad(m_dot,P,T,T_out,V_specific,Volume_rad,dt,vitesse);
+        [T_2]=rad(m_dot,P,T,T_out,V_specific,Volume_rad,dt,vitesse,H_speed);
     end
     V_2=V+V_specific*m_dot*dt;
     
@@ -68,14 +68,14 @@ while V<Volume_rad+Volume_rad/10
         T_2=(1-(V_2-Volume_rad)/(V_2-V))*(T_2-T)+T;
         dt_2=(1-(V_2-Volume_rad)/(V_2-V))*dt
         if V<Volume_rad
-        T_2=rad(m_dot,P,T,T_out,V_specific,Volume_rad,dt_2,vitesse)
+        T_2=rad(m_dot,P,T,T_out,V_specific,Volume_rad,dt_2,vitesse,H_speed)
         end
     end
     T=T_2;
     V=V_2;
 end
 C1=T_in_rad-T_out;
-T_out_exact=T_out+C1*exp(-(7.0757*vitesse  - 1.2056)/m_dot/energie_intern_liquide/1000*Volume_rad/Volume_rad);
+T_out_exact=T_out+C1*exp(-(7.0178*vitesse)/m_dot/energie_intern_liquide/1000*Volume_rad/Volume_rad);
 delta_t(i)=dt;
 E_rad(i)=T-T_out_exact;
 end

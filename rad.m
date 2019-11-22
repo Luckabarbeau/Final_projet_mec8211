@@ -1,4 +1,4 @@
-function [T]=rad(m_dot_in,P,T,T_out,V_specific,Volume_rad,dt,vitesse)
+function [T]=rad(m_dot_in,P,T,T_out,V_specific,Volume_rad,dt,vitesse,H_speed)
 %m_dot_in (kg/s), X(),P(Pa) ,T(C),Q_out(J/s),m_vap(kg),dt(s)
 V=0.0001 ;% Volume d'air dans le swirl pot
 R=8.31446261815324; %J?K?1?mol?1
@@ -9,7 +9,7 @@ R_s=R/mol_mass;
 
 
 % H=12.546*vitesse - 2.1376; %double pass
-H=7.0757*vitesse  - 1.2056; %single pass
+H=H_speed*vitesse  ; %single pass
 % H=50;
 Q_out=(T-T_out)*H;
 % H=0;
