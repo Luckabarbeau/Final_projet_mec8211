@@ -1,16 +1,25 @@
 %% mod�lisation du swirl pot
 clear all; close all
 load('baseline2020results_damping.mat')
+load('modelmoteur2019_2.mat')
+load('compare_data')
 RPM=data{89}.Values
 power=data{32}.Values
 car_speed=data{91}.Values
+
+
+RPM_to_power=[modelmoteur2019_2(:,1) modelmoteur2019_2(:,1)*2*pi/60.*modelmoteur2019_2(:,2)];
+power=interp1(RPM_to_power(:,1),RPM_to_power(:,2),compare_rpm).*(compare_tps/100*0.9+0.1);
+compare_time=compare_time-compare_time(1);
+compare_speed=compare_speed/3.6;
+
 
 
 
 m_vap=0;
 m_dot=0.6;
 P=101300 ;
-T_in=20;
+T_in=84;
 Q_out=10;
 i=1;
 % m_dot_out_s=m_dot;
@@ -69,6 +78,11 @@ H_speed_lhs=hyper_cube(:,2)*0.927225*2+7.845025-0.927225;
 ratio_heat_power_lhs=hyper_cube(:,1)*0.2*2+0.8-0.2;
 pompe_flow_lhs=hyper_cube(:,3)*0.1057*2+1.057-0.1057;
 
+
+H_speed_lhs=7.845025;
+ratio_heat_power_lhs=0.8;
+pompe_flow_lhs=1.057;
+
 ratio_heat_power=1
 for convergence=1:length(ratio_heat_power_lhs)
     m_vap=0;
@@ -100,14 +114,16 @@ for convergence=1:length(ratio_heat_power_lhs)
     H_speed=H_speed_lhs(convergence);
     %nombre de courant constant=
     for t=0:dt:temps_max-dt
-        Q_in=interp1(power.Time,power.Data,mod(t,max(RPM.Time)),'makima')*ratio_heat_power_lhs(convergence);
-        m_dot_in=pompe_flow_lhs(convergence)*interp1(RPM.Time,RPM.Data,mod(t,max(RPM.Time)),'makima')*0.0001;
-        vitesse=interp1(car_speed.Time,car_speed.Data,mod(t,max(RPM.Time)),'makima');
+%         Q_in=interp1(power.Time,power.Data,mod(t,max(RPM.Time)),'makima')*ratio_heat_power_lhs(convergence);
+%         m_dot_in=pompe_flow_lhs(convergence)*interp1(RPM.Time,RPM.Data,mod(t,max(RPM.Time)),'makima')*0.0001;
+%         vitesse=interp1(car_speed.Time,car_speed.Data,mod(t,max(RPM.Time)),'makima');
 %         vitesse=20;
 %         m_dot_in=1;
 %         Q_in=8000;
 %         
-
+        Q_in=interp1(compare_time,power,mod(t,max(compare_time)),'makima')*ratio_heat_power_lhs(convergence);
+        m_dot_in=pompe_flow_lhs(convergence)*interp1(compare_time,compare_rpm,mod(t,max(compare_time)),'makima')*0.0001;
+        vitesse=interp1(compare_time,compare_speed,mod(t,max(compare_time)),'makima');
         
         cell_in_swirl2=find(V>=(Volume_tube_1+Volume_m-dv/10)& V<(Volume_tube_1+Volume_m+Volume_swirl));
         for i=1:length(cell_in_swirl2)
@@ -253,25 +269,44 @@ for convergence=1:length(ratio_heat_power_lhs)
     figure(3)
     hold on
     plot(time,mean(T3))
+    plot(compare_time,mean(T3))
     pause(0.1)
 end
 
 
-
-figure()
-plot(ratio_heat_power_lhs,T_final,'.')
-figure()
-plot(H_speed_lhs,T_final,'.')
-figure()
-plot(pompe_flow_lhs,T_final,'.')
-
-linear_fit_ratio_heat_power=polyfit(ratio_heat_power_lhs,T_final',1)
-linear_fit_H_speed=polyfit(H_speed_lhs,T_final',1)
-linear_fit_pompe_flow=polyfit(pompe_flow_lhs,T_final',1)
-
-
-Correct_T_final_1=T_final
-
-ordre_approx=log((T_final(3)-T_final(2))/(T_final(2)-T_final(1)))/log(0.5);
-
-ordre_approx=log((T_final(4)-T_final(3))/(T_final(3)-T_final(2)))/log(0.5);
+%  T=delaunay(ratio_heat_power_lhs,H_speed_lhs)
+%  trisurf(T,ratio_heat_power_lhs,H_speed_lhs,T_final')
+%  shading interp
+%  contour(ratio_heat_power_lhs,H_speed_lhs,T_final')
+%  
+% figure()
+% plot(ratio_heat_power_lhs,T_final,'.')
+% % figure()
+% % plot(H_speed_lhs,T_final,'.')
+% % figure()
+% % plot(pompe_flow_lhs,T_final,'.')
+% 
+% linear_fit_ratio_heat_power=polyfit(ratio_heat_power_lhs,T_final',1);
+% linear_fit_H_speed=polyfit(H_speed_lhs,T_final',1);
+% linear_fit_pompe_flow=polyfit(pompe_flow_lhs,T_final',1);
+% 
+% 
+% Correct_T_final_1=T_final'-(polyval(linear_fit_ratio_heat_power,ratio_heat_power_lhs)-polyval(linear_fit_ratio_heat_power,0.8));
+% figure()
+% plot(H_speed_lhs,Correct_T_final_1,'.')
+% 
+% 
+% linear_fit_H_speed_2=polyfit(H_speed_lhs,Correct_T_final_1,1);
+% Correct_T_final_2=Correct_T_final_1-(polyval(linear_fit_H_speed_2,H_speed_lhs)-polyval(linear_fit_H_speed_2,7.845025));
+% figure()
+% plot(pompe_flow_lhs,Correct_T_final_2,'.')
+% Correct_T_final_3=T_final'-(polyval(linear_fit_H_speed_2,H_speed_lhs)-polyval(linear_fit_H_speed_2,7.845025));
+% plot(ratio_heat_power_lhs,Correct_T_final_3,'.')
+% 
+% 
+% 
+% 
+% 
+% ordre_approx=log((T_final(3)-T_final(2))/(T_final(2)-T_final(1)))/log(0.5);
+% 
+% ordre_approx=log((T_final(4)-T_final(3))/(T_final(3)-T_final(2)))/log(0.5);
