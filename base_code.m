@@ -256,6 +256,40 @@ for convergence=1:length(ratio_heat_power_lhs)
     pause(0.1)
 end
 
+
+ T=delaunay(ratio_heat_power_lhs,H_speed_lhs)
+ trisurf(T,ratio_heat_power_lhs,H_speed_lhs,T_final')
+ shading interp
+ contour(ratio_heat_power_lhs,H_speed_lhs,T_final')
+ 
+figure()
+plot(ratio_heat_power_lhs,T_final,'.')
+% figure()
+% plot(H_speed_lhs,T_final,'.')
+% figure()
+% plot(pompe_flow_lhs,T_final,'.')
+
+linear_fit_ratio_heat_power=polyfit(ratio_heat_power_lhs,T_final',1);
+linear_fit_H_speed=polyfit(H_speed_lhs,T_final',1);
+linear_fit_pompe_flow=polyfit(pompe_flow_lhs,T_final',1);
+
+
+Correct_T_final_1=T_final'-(polyval(linear_fit_ratio_heat_power,ratio_heat_power_lhs)-polyval(linear_fit_ratio_heat_power,0.8));
+figure()
+plot(H_speed_lhs,Correct_T_final_1,'.')
+
+
+linear_fit_H_speed_2=polyfit(H_speed_lhs,Correct_T_final_1,1);
+Correct_T_final_2=Correct_T_final_1-(polyval(linear_fit_H_speed_2,H_speed_lhs)-polyval(linear_fit_H_speed_2,7.845025));
+figure()
+plot(pompe_flow_lhs,Correct_T_final_2,'.')
+Correct_T_final_3=T_final'-(polyval(linear_fit_H_speed_2,H_speed_lhs)-polyval(linear_fit_H_speed_2,7.845025));
+plot(ratio_heat_power_lhs,Correct_T_final_3,'.')
+
+
+
+
+
 ordre_approx=log((T_final(3)-T_final(2))/(T_final(2)-T_final(1)))/log(0.5);
 
 ordre_approx=log((T_final(4)-T_final(3))/(T_final(3)-T_final(2)))/log(0.5);

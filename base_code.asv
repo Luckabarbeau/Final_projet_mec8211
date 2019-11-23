@@ -71,6 +71,8 @@ pompe_flow_lhs=hyper_cube(:,3)*0.1057*2+1.057-0.1057;
 
 ratio_heat_power=1
 for convergence=1:length(ratio_heat_power_lhs)
+    m_vap=0;
+    P=101300;
     V=linspace(0,Volume_total,Volume_total/dv+1)
     V(end)=[];
     T=ones(length(V),1)*T_in;
@@ -253,6 +255,22 @@ for convergence=1:length(ratio_heat_power_lhs)
     plot(time,mean(T3))
     pause(0.1)
 end
+
+
+
+figure()
+plot(ratio_heat_power_lhs,T_final,'.')
+figure()
+plot(H_speed_lhs,T_final,'.')
+figure()
+plot(pompe_flow_lhs,T_final,'.')
+
+linear_fit_ratio_heat_power=polyfit(ratio_heat_power_lhs,T_final',1)
+linear_fit_H_speed=polyfit(H_speed_lhs,T_final',1)
+linear_fit_pompe_flow=polyfit(pompe_flow_lhs,T_final',1)
+
+
+Correct_T_final_1=T_final
 
 ordre_approx=log((T_final(3)-T_final(2))/(T_final(2)-T_final(1)))/log(0.5);
 
