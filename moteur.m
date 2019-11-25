@@ -1,4 +1,4 @@
-function [T,X]=moteur(m_dot_in,P,T,Q_in)
+function [T,X]=moteur(m_dot_in,P,T,X_in,Q_in)
 %m_dot_in (kg/s), X(),P(Pa) ,T(C),Q_out(J/s),m_vap(kg),dt(s)
 V=0.0001 ;% Volume d'air dans le swirl pot
 R=8.31446261815324; %J?K?1?mol?1
@@ -23,14 +23,15 @@ end
 
 delta_t=Q_in/(energie_intern_liquide*1000)/m_dot_in;
 if (T+delta_t)>T_sat
-    T=T_sat;
+    
     Energie_to_evap=Q_in-(T_sat-T)*m_dot_in*(energie_intern_liquide*1000);
     X=Energie_to_evap/m_dot_in/(Energie_evap*1000);
+    T=T_sat;
 else
     X=0;
     T=T+delta_t;
 end
-
+X=X+X_in;
 V_out=volume_eau*(1-X)+volume_vap*X;
 
 

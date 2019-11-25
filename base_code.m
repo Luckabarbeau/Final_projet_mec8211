@@ -2,7 +2,9 @@
 clear all; close all
 load('baseline2020results_damping.mat')
 load('modelmoteur2019_2.mat')
-load('compare_data')
+% load('compare_data')
+load('compare_data_wings_no_fan')
+% load('compare_data_Lucka2019-04-13')
 RPM=data{89}.Values
 power=data{32}.Values
 car_speed=data{91}.Values
@@ -19,12 +21,13 @@ compare_speed=compare_speed/3.6;
 m_vap=0;
 m_dot=0.6;
 P=101300 ;
-T_in=84;
+T_in=compare_coolant_temp(1);
 Q_out=10;
 i=1;
 % m_dot_out_s=m_dot;
 V_specific=0.001043;
-T_out=17;
+% T_out=20.5; % cas validation
+T_out=18; %cas v
 temps_max=200
 alpha=0;%1.43e-7; %water conduction
 H_speed=7.0178;
@@ -34,7 +37,7 @@ courant_desirer=0.8;
 %Volume pour eau Composante m^3
 dv=0.00005;
 Volume_m=0.0007;
-Volume_tube_1=0.0035;
+Volume_tube_1=0.0001;
 Volume_swirl=0.0001;
 Volume_tube_2=0.0001;
 Volume_rad=0.0009;
@@ -79,9 +82,9 @@ ratio_heat_power_lhs=hyper_cube(:,1)*0.2*2+0.8-0.2;
 pompe_flow_lhs=hyper_cube(:,3)*0.1057*2+1.057-0.1057;
 
 
-H_speed_lhs=7.845025*1.5;
-ratio_heat_power_lhs=0.85;
-pompe_flow_lhs=1.057;
+% H_speed_lhs=7.845025*1.08;
+% ratio_heat_power_lhs=0.7;
+% pompe_flow_lhs=1.057;
 
 ratio_heat_power=1
 for convergence=1:length(ratio_heat_power_lhs)
@@ -109,7 +112,7 @@ for convergence=1:length(ratio_heat_power_lhs)
     dt=dv*courant_desirer/(V_specific*m_dot_max);
     dt=temps_max/round(temps_max/dt);
     
-    
+    T_pour_compare=T_in;
     
     H_speed=H_speed_lhs(convergence);
     %nombre de courant constant=
@@ -154,7 +157,7 @@ for convergence=1:length(ratio_heat_power_lhs)
             if V(i)<Volume_m
                 %Moteur
                 
-                [T_2(i),X_2(i)]=moteur(m_dot_in,P,T(i),Q_in/(Volume_m/(V_specific*m_dot_in*dt)));
+                [T_2(i),X_2(i)]=moteur(m_dot_in,P,T(i),X(i),Q_in/(Volume_m/(V_specific*m_dot_in*dt)));
                 V2(i)=V(i)+V_specific*m_dot_in*dt;
                 if V2(i)<Volume_m
                 else
@@ -197,7 +200,7 @@ for convergence=1:length(ratio_heat_power_lhs)
                 
                 if V2(i)<Volume_total
                 else
-                    [T_2(i),X_2(i)]=moteur(m_dot_in,P,T(i),Q_in/(Volume_m/(V_specific*m_dot_in*(dt*(V2(i)-Volume_total)/(V2(i)-V(i))))));
+                    [T_2(i),X_2(i)]=moteur(m_dot_in,P,T(i),X(i),Q_in/(Volume_m/(V_specific*m_dot_in*(dt*(V2(i)-Volume_total)/(V2(i)-V(i))))));
                 end
                 
             end
@@ -258,7 +261,11 @@ for convergence=1:length(ratio_heat_power_lhs)
 %               plot(V(:)',T(:)','.')
 %               pause(0.001)
             end
+            
+        select_T=V<(Volume_tube_1+Volume_m+Volume_swirl+Volume_tube_2) & V >Volume_m;
+        T_pour_compare=[T_pour_compare ; mean(T(select_T))];
     end
+  
     
     T_final(convergence)=(mean(T));
     T_error(convergence)=abs(mean(T)-71.375630660228140);
@@ -269,9 +276,40 @@ for convergence=1:length(ratio_heat_power_lhs)
     figure(3)
     hold on
     plot(time,mean(T3))
+%     plot(time,T_pour_compare)
     plot(compare_time,compare_coolant_temp)
+    xlabel('time (s)')
+    ylabel('Temperature moyenne (C)')
+%     title('Comparaison entre température mesurée et simulée pour calibration')
+    title('Comparaison entre température mesurée et simulée pour validation')
     pause(0.1)
+    E=0;
+    norm_erreur=1;
+    T_pour_compare_avreage=mean(T3);
+    for i=1:length(time)
+        T_data(i)=interp1(compare_time,compare_coolant_temp,time(i));
+        E(i)=abs((T_data(i)-T_pour_compare_avreage(i)))^norm_erreur;
+    end
+    error_norm(convergence)=(sum(E')/length(E))^(1/norm_erreur);
+
 end
+T_pour_compare_avreage=mean(T3);
+
+%%% mesure de l'erreur entre la la modélisation et la validation
+
+%erreur d'experimentale =+- 0.5 degree C
+
+norm_erreur=1;
+for i=1:length(time)
+    T_data(i)=interp1(compare_time,compare_coolant_temp,time(i));
+    E(i)=abs((T_data(i)-T_pour_compare_avreage(i)))^norm_erreur;
+end
+error_norm=(sum(E')/length(E))^(1/norm_erreur);
+
+
+
+
+
 
 
 %  T=delaunay(ratio_heat_power_lhs,H_speed_lhs)
